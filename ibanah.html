@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>إبانة | تسجيل الحضور</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root{
+    --primary:#2f6f62;
+    --primary-dark:#204d43;
+    --primary-light:#e6f0ed;
+    --accent:#c99a4b;
+    --bg:#faf8f4;
+    --card:#ffffff;
+    --text:#2b2b2b;
+    --muted:#7a7a72;
+    --danger:#b5473a;
+    --warn:#c99a4b;
+    --ok:#2f6f62;
+    --border:#e7e2d8;
+    --radius:16px;
+    --shadow:0 4px 18px rgba(47,111,98,.08);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:"Segoe UI","Tahoma","Arial",sans-serif;
+    direction:rtl;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  #app{max-width:520px;margin:0 auto;padding:18px 16px 60px;min-height:100vh;}
+  .wide #app{max-width:920px;}
+  .brand{
+    text-align:center;
+    padding:22px 10px 18px;
+  }
+  .brand h1{
+    font-size:34px;
+    margin:0 0 4px;
+    color:var(--primary-dark);
+    letter-spacing:1px;
+    font-weight:800;
+  }
+  .brand p{margin:0;color:var(--muted);font-size:14px;}
+  .card{
+    background:var(--card);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:20px;
+    margin-bottom:16px;
+    border:1px solid var(--border);
+  }
+  .meeting-badge{
+    display:inline-block;
+    padding:5px 14px;
+    border-radius:20px;
+    font-size:13px;
+    font-weight:700;
+    margin-bottom:10px;
+  }
+  .badge-virtual{background:#e8f0fb;color:#2a5aa0;}
+  .badge-onsite{background:#f3ecd9;color:#8a6a1f;}
+  .meeting-title{font-size:20px;font-weight:800;margin:4px 0;color:var(--primary-dark);}
+  .meeting-meta{color:var(--muted);font-size:14.5px;line-height:2;}
+  .meeting-meta b{color:var(--text);}
+  select, textarea, input[type=text], input[type=password], input[type=date], input[type=time], input[type=number]{
+    width:100%;
+    padding:13px 14px;
+    border-radius:12px;
+    border:1.5px solid var(--border);
+    font-size:16px;
+    font-family:inherit;
+    background:#fff;
+    color:var(--text);
+    margin-top:6px;
+  }
+  select:focus, textarea:focus, input:focus{outline:2px solid var(--primary);border-color:var(--primary);}
+  label{font-size:14px;font-weight:700;color:var(--text);display:block;margin-top:14px;}
+  .btn{
+    display:block;
+    width:100%;
+    padding:15px;
+    border-radius:14px;
+    border:none;
+    font-size:17px;
+    font-weight:800;
+    cursor:pointer;
+    margin-top:12px;
+    font-family:inherit;
+    transition:transform .05s ease, opacity .15s ease;
+  }
+  .btn:active{transform:scale(.98);}
+  .btn-primary{background:var(--primary);color:#fff;}
+  .btn-outline{background:#fff;color:var(--danger);border:1.5px solid var(--danger);}
+  .btn-secondary{background:var(--primary-light);color:var(--primary-dark);}
+  .btn-accent{background:var(--accent);color:#fff;}
+  .btn-sm{padding:9px 14px;font-size:13.5px;border-radius:10px;margin-top:0;width:auto;display:inline-block;}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+  .msg-success{
+    background:#eaf5ef;color:var(--primary-dark);border-radius:14px;padding:22px;text-align:center;
+    font-size:17px;font-weight:700;line-height:1.9;border:1px solid #cfe8db;
+  }
+  .msg-closed{
+    background:#f6f1e6;color:#8a6a1f;border-radius:14px;padding:22px;text-align:center;
+    font-size:16px;font-weight:700;border:1px solid #ecdfc0;
+  }
+  .msg-already{
+    background:#fdf3ee;color:var(--danger);border-radius:14px;padding:16px;text-align:center;
+    font-size:15px;font-weight:700;margin-top:10px;border:1px solid #f4dcd3;
+  }
+  .center{text-align:center;}
+  .muted{color:var(--muted);font-size:13px;}
+  .row{display:flex;gap:10px;}
+  .row > *{flex:1;}
+  a.admin-link{
+    display:block;text-align:center;color:var(--muted);font-size:12.5px;margin-top:28px;text-decoration:none;
+  }
+  /* Admin */
+  .tabs{display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;padding-bottom:4px;}
+  .tab{
+    padding:10px 16px;border-radius:12px;background:#fff;border:1.5px solid var(--border);
+    font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;color:var(--muted);
+  }
+  .tab.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;background:#fff;}
+  th,td{padding:10px 8px;text-align:right;border-bottom:1px solid var(--border);}
+  th{background:var(--primary-light);color:var(--primary-dark);font-weight:800;position:sticky;top:0;}
+  tr:hover{background:#fafaf8;}
+  .table-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border);}
+  .status-pill{padding:3px 10px;border-radius:20px;font-size:12px;font-weight:800;display:inline-block;}
+  .pill-present{background:#e4f3ea;color:var(--ok);}
+  .pill-excused{background:#fdf1e2;color:var(--warn);}
+  .pill-absent{background:#fbe9e6;color:var(--danger);}
+  .pill-pending{background:#eee;color:#888;}
+  .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+  .stat-box{background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 8px;text-align:center;}
+  .stat-box .num{font-size:22px;font-weight:800;color:var(--primary-dark);}
+  .stat-box .lbl{font-size:11.5px;color:var(--muted);margin-top:2px;}
+  .meeting-item{
+    background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;
+  }
+  .meeting-item.open{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary-light);}
+  .flex-between{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+  .icon-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;text-decoration:underline;padding:4px;}
+  .top-actions{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+  .top-actions h2{margin:0;font-size:20px;color:var(--primary-dark);}
+  .search-bar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+  .search-bar select, .search-bar input{width:auto;flex:1;min-width:120px;margin-top:0;}
+  .qr-box{text-align:center;padding:14px;background:#fff;border-radius:12px;border:1px solid var(--border);}
+  .link-box{
+    background:#f4f2ec;border-radius:10px;padding:10px 12px;font-size:12.5px;word-break:break-all;color:var(--muted);
+    margin-top:8px;
+  }
+  .close-x{background:none;border:none;font-size:20px;color:var(--muted);cursor:pointer;}
+  .loading{text-align:center;padding:40px;color:var(--muted);}
+  ::placeholder{color:#b3ad9f;}
+  @media print{
+    a.admin-link, .tabs, .no-print, .search-bar, .btn{display:none !important;}
+    body{background:#fff;}
+  }
+</style>
+</head>
+<body>
+<div id="app"><div class="loading">جاري التحميل...</div></div>
+
+<script>
+/* ================= DATA ================= */
+const PARTICIPANTS = [
+"أديم الجهني","أروى أبا الخيل","أروى الجنيدل","آسية الحمدان","آسية الجنيدل","أسماء الزاحم","أفنان المهيدب",
+"أمينة الشمري","أمينة المطرودي","أنفال العنزان","البندري العريفي","بتول الرومي","الجوهرة الوشلي","جواهر القحطاني",
+"حفصة آدم","حنان الشثري","حصة العساف","ديمة الكثيري","ربى السكيت","رند الزامل","رند الزايد","ريم الغميز",
+"سارة إسماعيل","سارة تركستاني","سارة الشهيل","سارة المديفر","سعاد القاسم","سلمى الربيش","شهد المرشود",
+"غادة الدواس","فاطمة السلطان","فرح البداح","في الدرويش","كنده الجربوع","لجين القشعمي","لمى الصبحي",
+"لمياء المطرودي","مريم الذويخ","مها المهوس","منال الكاف","منيرة السليمان","منيرة الصقري","نجد الموسى",
+"نورة الدهام","نورة الزامل","نورة العجلان","هدى الدامغ","هدى الكثيري","هناء النفجان"
+];
+
+const DEFAULT_PASSWORD = "ibanah2026";
+const MK = "meetings";       // shared key
+const AK = "attendance";     // shared key
+const SK = "admin_settings"; // shared key
+
+let state = {
+  meetings: [],
+  attendance: {},
+  adminPassword: DEFAULT_PASSWORD,
+  isAdmin: false,
+  route: "#/",
+  adminTab: "meetings",
+  selectedMeetingLog: null,
+  filters: {search:"", type:"", status:"", meeting:""}
+};
+
+/* ================= STORAGE HELPERS ================= */
+async function loadAll(){
+  try{
+    const m = await window.storage.get(MK, true);
+    state.meetings = m ? JSON.parse(m.value) : [];
+  }catch(e){ state.meetings = []; }
+  try{
+    const a = await window.storage.get(AK, true);
+    state.attendance = a ? JSON.parse(a.value) : {};
+  }catch(e){ state.attendance = {}; }
+  try{
+    const s = await window.storage.get(SK, true);
+    state.adminPassword = s ? (JSON.parse(s.value).password || DEFAULT_PASSWORD) : DEFAULT_PASSWORD;
+  }catch(e){ state.adminPassword = DEFAULT_PASSWORD; }
+}
+async function saveMeetings(){
+  await window.storage.set(MK, JSON.stringify(state.meetings), true);
+}
+async function saveAttendance(){
+  await window.storage.set(AK, JSON.stringify(state.attendance), true);
+}
+async function savePassword(pw){
+  await window.storage.set(SK, JSON.stringify({password: pw}), true);
+  state.adminPassword = pw;
+}
+
+/* ================= UTIL ================= */
+function uid(){ return "m" + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function now(){ return Date.now(); }
+function fmtDateTime(ts){
+  if(!ts) return "-";
+  const d = new Date(ts);
+  return d.toLocaleDateString("ar-SA") + " " + d.toLocaleTimeString("ar-SA",{hour:"2-digit",minute:"2-digit"});
+}
+function fmtDate(dateStr){
+  if(!dateStr) return "-";
+  const d = new Date(dateStr+"T00:00:00");
+  return d.toLocaleDateString("ar-SA",{weekday:"long", year:"numeric", month:"long", day:"numeric"});
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* meeting open/closed computed state */
+function isMeetingOpen(mt){
+  if(!mt) return false;
+  if(mt.status !== "open") return false;
+  if(mt.openUntil && now() > mt.openUntil) return false;
+  return true;
+}
+function isMeetingClosedFinal(mt){
+  // closed explicitly OR time passed after being opened at least once
+  if(mt.status === "closed") return true;
+  if(mt.status === "open" && mt.openUntil && now() > mt.openUntil) return true;
+  return false;
+}
+function getCurrentOpenMeeting(){
+  const open = state.meetings.filter(isMeetingOpen);
+  if(open.length===0) return null;
+  open.sort((a,b)=> (b.openedAt||0) - (a.openedAt||0));
+  return open[0];
+}
+function getAttendanceRecord(meetingId, name){
+  return (state.attendance[meetingId] && state.attendance[meetingId][name]) || null;
+}
+function setAttendanceRecord(meetingId, name, rec){
+  if(!state.attendance[meetingId]) state.attendance[meetingId] = {};
+  state.attendance[meetingId][name] = rec;
+}
+// effective status for stats/table: explicit record, else غائب if meeting closed, else pending
+function effectiveStatus(meetingId, name){
+  const rec = getAttendanceRecord(meetingId, name);
+  if(rec) return rec.status;
+  const mt = state.meetings.find(m=>m.id===meetingId);
+  if(mt && isMeetingClosedFinal(mt)) return "غائب";
+  return "لم يسجل بعد";
+}
+
+/* ================= ROUTER ================= */
+window.addEventListener("hashchange", ()=>{ state.route = location.hash || "#/"; render(); });
+
+function goto(route){ location.hash = route; }
+
+/* ================= RENDER ROOT ================= */
+async function init(){
+  document.body.classList.remove("wide");
+  await loadAll();
+  state.route = location.hash || "#/";
+  render();
+}
+
+function render(){
+  const app = document.getElementById("app");
+  document.body.classList.toggle("wide", state.route.startsWith("#/admin") && state.isAdmin);
+  if(state.route === "#/admin"){
+    app.innerHTML = renderAdminLogin();
+    bindAdminLogin();
+    return;
+  }
+  if(state.route.startsWith("#/admin") && state.isAdmin){
+    app.innerHTML = renderAdmin();
+    bindAdmin();
+    return;
+  }
+  if(state.route.startsWith("#/admin") && !state.isAdmin){
+    goto("#/admin");
+    return;
+  }
+  app.innerHTML = renderParticipant();
+  bindParticipant();
+}
+
+/* ================= PARTICIPANT VIEW ================= */
+let participantSelected = "";
+let participantStep = "select"; // select | confirm-absent-reason | done
+let doneMessage = "";
+
+function renderParticipant(){
+  const mt = getCurrentOpenMeeting();
+  let html = `<div class="brand"><h1>إبانة</h1><p>مجالس العقيدة الطحاوية</p></div>`;
+
+  if(!mt){
+    html += `<div class="card msg-closed">تسجيل الحضور مغلق حاليًا.</div>`;
+    html += `<a class="admin-link" href="#/admin">لوحة الإدارة</a>`;
+    return html;
+  }
+
+  const typeLabel = mt.type === "onsite" ? "لقاء حضوري" : "لقاء افتراضي (عبر Zoom)";
+  const badgeClass = mt.type === "onsite" ? "badge-onsite" : "badge-virtual";
+
+  html += `<div class="card">
+    <span class="meeting-badge ${badgeClass}">${typeLabel}</span>
+    <div class="meeting-title">${escapeHtml(mt.title || typeLabel)}</div>
+    <div class="meeting-meta">
+      <div>📅 <b>${fmtDate(mt.date)}</b></div>
+      <div>🕐 الساعة: <b>${mt.time || "-"}</b></div>
+      ${mt.type==="onsite" ? `<div>📍 المكان: <b>${escapeHtml(mt.location||"مركز الهمة العلياء")}</b></div>` : ""}
+    </div>
+  </div>`;
+
+  if(doneMessage){
+    html += `<div class="card msg-success">${doneMessage}</div>`;
+    html += `<a class="admin-link" href="#/admin">لوحة الإدارة</a>`;
+    return html;
+  }
+
+  html += `<div class="card">
+    <label>اختاري اسمك من القائمة</label>
+    <select id="nameSelect">
+      <option value="">-- اختاري اسمك --</option>
+      ${PARTICIPANTS.map(n=>`<option value="${escapeHtml(n)}" ${n===participantSelected?"selected":""}>${escapeHtml(n)}</option>`).join("")}
+    </select>
+    <div id="statusArea"></div>
+  </div>`;
+
+  html += `<a class="admin-link" href="#/admin">لوحة الإدارة</a>`;
+  return html;
+}
+
+function bindParticipant(){
+  const mt = getCurrentOpenMeeting();
+  if(!mt || doneMessage) return;
+  const sel = document.getElementById("nameSelect");
+  const area = document.getElementById("statusArea");
+  if(!sel) return;
+
+  function renderArea(){
+    const name = sel.value;
+    if(!name){ area.innerHTML=""; return; }
+    const existing = getAttendanceRecord(mt.id, name);
+    if(existing){
+      const label = existing.status === "حاضر" ? "حاضر" : "معتذر";
+      area.innerHTML = `<div class="msg-already">حالتكِ لهذا اللقاء مُسجّلة مسبقًا: <b>${label}</b></div>`;
+      return;
+    }
+    area.innerHTML = `
+      <button class="btn btn-primary" id="btnPresent">✅ تسجيل الحضور</button>
+      <button class="btn btn-secondary" id="btnExcuse">📝 تقديم اعتذار</button>
+      <div id="excuseArea"></div>
+    `;
+    document.getElementById("btnPresent").onclick = async ()=>{
+      setAttendanceRecord(mt.id, name, {status:"حاضر", timestamp: now(), reason:""});
+      await saveAttendance();
+      doneMessage = "تم تسجيل حضورك، نفع الله بك وبارك فيك 🌷";
+      render();
+    };
+    document.getElementById("btnExcuse").onclick = ()=>{
+      document.getElementById("excuseArea").innerHTML = `
+        <label>سبب الاعتذار (اختياري)</label>
+        <textarea id="excuseReason" rows="3" placeholder="يمكنكِ كتابة السبب هنا..."></textarea>
+        <button class="btn btn-accent" id="btnConfirmExcuse">تأكيد الاعتذار</button>
+      `;
+      document.getElementById("btnConfirmExcuse").onclick = async ()=>{
+        const reason = document.getElementById("excuseReason").value.trim();
+        setAttendanceRecord(mt.id, name, {status:"معتذر", timestamp: now(), reason});
+        await saveAttendance();
+        doneMessage = "تم تسجيل اعتذارك، شكر الله لك 🌷";
+        render();
+      };
+    };
+  }
+  sel.onchange = renderArea;
+  renderArea();
+}
+
+/* ================= ADMIN LOGIN ================= */
+function renderAdminLogin(){
+  return `
+  <div class="brand"><h1>إبانة</h1><p>مجالس العقيدة الطحاوية</p></div>
+  <div class="card">
+    <label>كلمة المرور</label>
+    <input type="password" id="pwInput" placeholder="أدخلي كلمة المرور">
+    <div id="pwError" style="color:var(--danger);font-size:13px;margin-top:6px;"></div>
+    <button class="btn btn-primary" id="btnLogin">دخول</button>
+    <a class="admin-link" href="#/">العودة لصفحة تسجيل الحضور</a>
+  </div>`;
+}
+function bindAdminLogin(){
+  const btn = document.getElementById("btnLogin");
+  const input = document.getElementById("pwInput");
+  const err = document.getElementById("pwError");
+  function tryLogin(){
+    if(input.value === state.adminPassword){
+      state.isAdmin = true;
+      state.route = "#/admin/dashboard";
+      location.hash = "#/admin/dashboard";
+      render();
+    } else {
+      err.textContent = "كلمة المرور غير صحيحة";
+    }
+  }
+  btn.onclick = tryLogin;
+  input.addEventListener("keydown", e=>{ if(e.key==="Enter") tryLogin(); });
+  input.focus();
+}
+
+/* ================= ADMIN DASHBOARD ================= */
+function renderAdmin(){
+  const cur = getCurrentOpenMeeting();
+  const totalMeetingsHeld = state.meetings.filter(isMeetingClosedFinal).length;
+
+  let statsRow = "";
+  if(cur){
+    const records = state.attendance[cur.id] || {};
+    let present=0, excused=0, absent=0;
+    PARTICIPANTS.forEach(n=>{
+      const s = effectiveStatus(cur.id, n);
+      if(s==="حاضر") present++; else if(s==="معتذر") excused++; else if(s==="غائب") absent++;
+    });
+    const pct = PARTICIPANTS.length ? Math.round((present/PARTICIPANTS.length)*100) : 0;
+    statsRow = `
+    <div class="stat-grid">
+      <div class="stat-box"><div class="num">${PARTICIPANTS.length}</div><div class="lbl">إجمالي المشاركات</div></div>
+      <div class="stat-box"><div class="num">${present}</div><div class="lbl">حاضرات</div></div>
+      <div class="stat-box"><div class="num">${excused}</div><div class="lbl">معتذرات</div></div>
+      <div class="stat-box"><div class="num">${absent}</div><div class="lbl">غائبات</div></div>
+      <div class="stat-box"><div class="num">${pct}%</div><div class="lbl">نسبة الحضور</div></div>
+      <div class="stat-box"><div class="num">${totalMeetingsHeld}</div><div class="lbl">لقاءات منعقدة</div></div>
+    </div>`;
+  } else {
+    statsRow = `<div class="card muted center">لا يوجد لقاء مفتوح حاليًا. (إجمالي اللقاءات المنعقدة: ${totalMeetingsHeld})</div>`;
+  }
+
+  const tabs = `
+  <div class="tabs">
+    <div class="tab ${state.adminTab==='meetings'?'active':''}" data-tab="meetings">إدارة اللقاءات</div>
+    <div class="tab ${state.adminTab==='log'?'active':''}" data-tab="log">سجل اللقاء</div>
+    <div class="tab ${state.adminTab==='stats'?'active':''}" data-tab="stats">الإحصاءات</div>
+    <div class="tab ${state.adminTab==='settings'?'active':''}" data-tab="settings">الإعدادات</div>
+  </div>`;
+
+  let body = "";
+  if(state.adminTab==="meetings") body = renderMeetingsTab();
+  else if(state.adminTab==="log") body = renderLogTab();
+  else if(state.adminTab==="stats") body = renderStatsTab();
+  else if(state.adminTab==="settings") body = renderSettingsTab();
+
+  return `
+  <div class="top-actions">
+    <h2>لوحة إدارة إبانة</h2>
+    <button class="icon-btn no-print" id="btnLogout">تسجيل الخروج</button>
+  </div>
+  ${statsRow}
+  ${tabs}
+  ${body}
+  `;
+}
+
+function renderMeetingsTab(){
+  const sorted = [...state.meetings].sort((a,b)=> new Date(b.date+"T"+(b.time||"00:00")) - new Date(a.date+"T"+(a.time||"00:00")));
+  let items = sorted.map(mt=>{
+    const open = isMeetingOpen(mt);
+    const closedFinal = isMeetingClosedFinal(mt);
+    const typeLabel = mt.type==="onsite" ? "حضوري" : "افتراضي";
+    let statusLabel, statusColor;
+    if(open){ statusLabel="مفتوح الآن"; statusColor="var(--primary)"; }
+    else if(closedFinal){ statusLabel="مغلق"; statusColor="var(--danger)"; }
+    else { statusLabel="لم يُفتح بعد"; statusColor="var(--muted)"; }
+
+    return `
+    <div class="meeting-item ${open?'open':''}">
+      <div class="flex-between">
+        <div>
+          <b>${escapeHtml(mt.title || (typeLabel+" - "+fmtDate(mt.date)))}</b><br>
+          <span class="muted">${fmtDate(mt.date)} — ${mt.time||""} ${mt.type==='onsite' ? '· '+escapeHtml(mt.location||'') : ''}</span>
+        </div>
+        <span style="color:${statusColor};font-weight:800;font-size:13px;">${statusLabel}</span>
+      </div>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+        ${open
+          ? `<button class="btn btn-sm btn-outline" data-close="${mt.id}">إغلاق التسجيل</button>`
+          : `<button class="btn btn-sm btn-secondary" data-open="${mt.id}">فتح التسجيل</button>`
+        }
+        <button class="btn btn-sm btn-secondary" data-edit="${mt.id}">تعديل</button>
+        <button class="btn btn-sm btn-secondary" data-qr="${mt.id}">QR</button>
+        <button class="btn btn-sm btn-outline" data-del="${mt.id}">حذف</button>
+      </div>
+    </div>`;
+  }).join("") || `<div class="card muted center">لا توجد لقاءات بعد. أنشئي لقاءً جديدًا.</div>`;
+
+  return `
+  <div class="card">
+    <div class="flex-between"><b>إنشاء لقاء جديد</b></div>
+    <label>نوع اللقاء</label>
+    <select id="newType">
+      <option value="virtual">افتراضي (Zoom)</option>
+      <option value="onsite">حضوري</option>
+    </select>
+    <label>عنوان اللقاء (اختياري)</label>
+    <input type="text" id="newTitle" placeholder="مثال: اللقاء الأسبوعي - الدرس الثالث">
+    <div class="row">
+      <div><label>التاريخ</label><input type="date" id="newDate"></div>
+      <div><label>الوقت</label><input type="time" id="newTime"></div>
+    </div>
+    <div id="locationField">
+      <label>المكان</label>
+      <input type="text" id="newLocation" value="مركز الهمة العلياء">
+    </div>
+    <button class="btn btn-primary" id="btnAddMeeting">إضافة اللقاء</button>
+  </div>
+
+  <div class="qr-modal-holder"></div>
+  ${items}
+  `;
+}
+
+function renderLogTab(){
+  const meetingOptions = [...state.meetings].sort((a,b)=> new Date(b.date) - new Date(a.date));
+  const chosen = state.selectedMeetingLog || (meetingOptions[0] && meetingOptions[0].id) || "";
+  const mt = state.meetings.find(m=>m.id===chosen);
+
+  let rows = "";
+  if(mt){
+    let names = [...PARTICIPANTS];
+    if(state.filters.search) names = names.filter(n=>n.includes(state.filters.search));
+    if(state.filters.status) names = names.filter(n=> effectiveStatus(mt.id,n)===state.filters.status);
+    names.sort((a,b)=>a.localeCompare(b,'ar'));
+
+    rows = names.map(n=>{
+      const rec = getAttendanceRecord(mt.id, n);
+      const st = effectiveStatus(mt.id, n);
+      const pillClass = st==="حاضر"?"pill-present":st==="معتذر"?"pill-excused":st==="غائب"?"pill-absent":"pill-pending";
+      return `<tr>
+        <td>${escapeHtml(n)}</td>
+        <td>
+          <select class="statusEdit" data-name="${escapeHtml(n)}" data-meeting="${mt.id}">
+            <option value="لم يسجل بعد" ${st==='لم يسجل بعد'?'selected':''}>لم يسجل بعد</option>
+            <option value="حاضر" ${st==='حاضر'?'selected':''}>حاضر</option>
+            <option value="معتذر" ${st==='معتذر'?'selected':''}>معتذر</option>
+            <option value="غائب" ${st==='غائب'?'selected':''}>غائب</option>
+          </select>
+        </td>
+        <td>${rec ? fmtDateTime(rec.timestamp) : "-"}</td>
+        <td>${mt.type==='onsite'?'حضوري':'افتراضي'}</td>
+        <td>${rec && rec.reason ? escapeHtml(rec.reason) : "-"}</td>
+      </tr>`;
+    }).join("");
+  }
+
+  return `
+  <div class="card">
+    <label>اختاري اللقاء</label>
+    <select id="logMeetingSelect">
+      ${meetingOptions.map(m=>`<option value="${m.id}" ${m.id===chosen?'selected':''}>${escapeHtml(m.title||(m.type==='onsite'?'حضوري':'افتراضي'))} — ${fmtDate(m.date)}</option>`).join("")}
+    </select>
+  </div>
+  <div class="search-bar no-print">
+    <input type="text" id="searchName" placeholder="بحث باسم المشاركة..." value="${escapeHtml(state.filters.search)}">
+    <select id="statusFilter">
+      <option value="">كل الحالات</option>
+      <option value="حاضر" ${state.filters.status==='حاضر'?'selected':''}>حاضر</option>
+      <option value="معتذر" ${state.filters.status==='معتذر'?'selected':''}>معتذر</option>
+      <option value="غائب" ${state.filters.status==='غائب'?'selected':''}>غائب</option>
+    </select>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>الاسم</th><th>الحالة</th><th>وقت التسجيل</th><th>نوع اللقاء</th><th>سبب الاعتذار</th></tr></thead>
+      <tbody>${rows || `<tr><td colspan="5" class="center muted">لا يوجد لقاء محدد</td></tr>`}</tbody>
+    </table>
+  </div>
+  <div class="row no-print" style="margin-top:12px;">
+    <button class="btn btn-secondary" id="btnExportCsv">تصدير CSV</button>
+    <button class="btn btn-secondary" id="btnPrint">طباعة التقرير</button>
+  </div>
+  `;
+}
+
+function renderStatsTab(){
+  let names = [...PARTICIPANTS];
+  if(state.filters.search) names = names.filter(n=>n.includes(state.filters.search));
+  names.sort((a,b)=>a.localeCompare(b,'ar'));
+
+  const closedMeetings = state.meetings.filter(isMeetingClosedFinal);
+  const onsiteMeetings = closedMeetings.filter(m=>m.type==="onsite");
+  const virtualMeetings = closedMeetings.filter(m=>m.type==="virtual");
+
+  const rows = names.map(n=>{
+    let present=0, excused=0, absent=0;
+    closedMeetings.forEach(mt=>{
+      const s = effectiveStatus(mt.id, n);
+      if(s==="حاضر") present++; else if(s==="معتذر") excused++; else if(s==="غائب") absent++;
+    });
+    let onsitePresent=0, virtualPresent=0;
+    onsiteMeetings.forEach(mt=>{ if(effectiveStatus(mt.id,n)==="حاضر") onsitePresent++; });
+    virtualMeetings.forEach(mt=>{ if(effectiveStatus(mt.id,n)==="حاضر") virtualPresent++; });
+    const total = closedMeetings.length;
+    const pct = total ? Math.round((present/total)*100) : 0;
+    return `<tr>
+      <td>${escapeHtml(n)}</td>
+      <td>${present}</td>
+      <td>${excused}</td>
+      <td>${absent}</td>
+      <td>${pct}%</td>
+      <td>${onsitePresent}/${onsiteMeetings.length}</td>
+      <td>${virtualPresent}/${virtualMeetings.length}</td>
+    </tr>`;
+  }).join("");
+
+  return `
+  <div class="search-bar no-print">
+    <input type="text" id="statsSearch" placeholder="بحث باسم المشاركة..." value="${escapeHtml(state.filters.search)}">
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>الاسم</th><th>حضور</th><th>اعتذار</th><th>غياب</th><th>نسبة الحضور</th><th>حضوري</th><th>افتراضي</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>
+  <div class="row no-print" style="margin-top:12px;">
+    <button class="btn btn-secondary" id="btnExportStatsCsv">تصدير الإحصاءات CSV</button>
+    <button class="btn btn-secondary" id="btnPrintStats">طباعة</button>
+  </div>
+  `;
+}
+
+function renderSettingsTab(){
+  const link = location.href.split('#')[0];
+  return `
+  <div class="card">
+    <b>رابط تسجيل الحضور الثابت</b>
+    <div class="link-box">${escapeHtml(link)}</div>
+    <button class="btn btn-secondary" id="btnCopyLink">نسخ الرابط</button>
+  </div>
+  <div class="card">
+    <b>تغيير كلمة مرور لوحة الإدارة</b>
+    <label>كلمة المرور الجديدة</label>
+    <input type="password" id="newPw" placeholder="كلمة مرور جديدة">
+    <button class="btn btn-primary" id="btnChangePw">حفظ كلمة المرور</button>
+    <div id="pwSaveMsg" class="muted" style="margin-top:8px;"></div>
+  </div>
+  `;
+}
+
+/* ================= ADMIN BINDINGS ================= */
+function bindAdmin(){
+  const logoutBtn = document.getElementById("btnLogout");
+  if(logoutBtn) logoutBtn.onclick = ()=>{ state.isAdmin=false; goto("#/"); };
+
+  document.querySelectorAll(".tab").forEach(t=>{
+    t.onclick = ()=>{ state.adminTab = t.dataset.tab; render(); };
+  });
+
+  if(state.adminTab==="meetings") bindMeetingsTab();
+  if(state.adminTab==="log") bindLogTab();
+  if(state.adminTab==="stats") bindStatsTab();
+  if(state.adminTab==="settings") bindSettingsTab();
+}
+
+function bindMeetingsTab(){
+  const typeSel = document.getElementById("newType");
+  const locField = document.getElementById("locationField");
+  function toggleLoc(){ locField.style.display = typeSel.value==="onsite" ? "block":"none"; }
+  typeSel.onchange = toggleLoc; toggleLoc();
+
+  document.getElementById("btnAddMeeting").onclick = async ()=>{
+    const date = document.getElementById("newDate").value;
+    const time = document.getElementById("newTime").value;
+    if(!date || !time){ alert("الرجاء إدخال التاريخ والوقت"); return; }
+    const mt = {
+      id: uid(),
+      type: typeSel.value,
+      title: document.getElementById("newTitle").value.trim(),
+      date, time,
+      location: typeSel.value==="onsite" ? (document.getElementById("newLocation").value.trim()||"مركز الهمة العلياء") : "",
+      status: "draft",
+      openedAt: null,
+      openUntil: null,
+      createdAt: now()
+    };
+    state.meetings.push(mt);
+    await saveMeetings();
+    render();
+  };
+
+  document.querySelectorAll("[data-open]").forEach(b=>{
+    b.onclick = async ()=>{
+      const id = b.dataset.open;
+      const mins = prompt("مدة فتح التسجيل بالدقائق (مثال: 120):", "120");
+      if(mins===null) return;
+      const m = state.meetings.find(x=>x.id===id);
+      m.status="open"; m.openedAt=now(); m.openUntil = now() + (parseInt(mins||"0",10)*60000);
+      await saveMeetings(); render();
+    };
+  });
+  document.querySelectorAll("[data-close]").forEach(b=>{
+    b.onclick = async ()=>{
+      const id = b.dataset.close;
+      const m = state.meetings.find(x=>x.id===id);
+      m.status="closed";
+      await saveMeetings(); render();
+    };
+  });
+  document.querySelectorAll("[data-del]").forEach(b=>{
+    b.onclick = async ()=>{
+      if(!confirm("هل تريدين حذف هذا اللقاء وجميع سجلاته؟")) return;
+      const id = b.dataset.del;
+      state.meetings = state.meetings.filter(x=>x.id!==id);
+      delete state.attendance[id];
+      await saveMeetings(); await saveAttendance(); render();
+    };
+  });
+  document.querySelectorAll("[data-edit]").forEach(b=>{
+    b.onclick = async ()=>{
+      const id = b.dataset.edit;
+      const m = state.meetings.find(x=>x.id===id);
+      const title = prompt("عنوان اللقاء:", m.title||"");
+      if(title===null) return;
+      const date = prompt("التاريخ (YYYY-MM-DD):", m.date);
+      if(date===null) return;
+      const time = prompt("الوقت (HH:MM):", m.time);
+      if(time===null) return;
+      let location = m.location;
+      if(m.type==="onsite"){
+        location = prompt("المكان:", m.location||"مركز الهمة العلياء");
+        if(location===null) return;
+      }
+      m.title=title; m.date=date; m.time=time; m.location=location;
+      await saveMeetings(); render();
+    };
+  });
+  document.querySelectorAll("[data-qr]").forEach(b=>{
+    b.onclick = ()=>{
+      const holder = document.querySelector(".qr-modal-holder");
+      const link = location.href.split('#')[0];
+      holder.innerHTML = `
+        <div class="card center">
+          <div class="flex-between"><b>رمز QR لرابط التسجيل</b><button class="close-x" id="closeQr">✕</button></div>
+          <div class="qr-box" id="qrRender" style="margin-top:10px;"></div>
+          <div class="link-box">${escapeHtml(link)}</div>
+        </div>`;
+      new QRCode(document.getElementById("qrRender"), {text: link, width:180, height:180});
+      document.getElementById("closeQr").onclick = ()=>{ holder.innerHTML=""; };
+    };
+  });
+}
+
+function bindLogTab(){
+  const sel = document.getElementById("logMeetingSelect");
+  sel.onchange = ()=>{ state.selectedMeetingLog = sel.value; render(); };
+
+  const searchInput = document.getElementById("searchName");
+  searchInput.oninput = ()=>{ state.filters.search = searchInput.value; render(); };
+  const statusFilter = document.getElementById("statusFilter");
+  statusFilter.onchange = ()=>{ state.filters.status = statusFilter.value; render(); };
+
+  document.querySelectorAll(".statusEdit").forEach(s=>{
+    s.onchange = async ()=>{
+      const name = s.dataset.name, meetingId = s.dataset.meeting, val = s.value;
+      if(val==="لم يسجل بعد"){
+        if(state.attendance[meetingId]) delete state.attendance[meetingId][name];
+      } else {
+        const existing = getAttendanceRecord(meetingId, name);
+        setAttendanceRecord(meetingId, name, {status: val, timestamp: existing?existing.timestamp:now(), reason: existing?existing.reason:""});
+      }
+      await saveAttendance(); render();
+    };
+  });
+
+  const exportBtn = document.getElementById("btnExportCsv");
+  if(exportBtn) exportBtn.onclick = ()=>{
+    const mt = state.meetings.find(m=>m.id===state.selectedMeetingLog);
+    if(!mt) return;
+    let csv = "\uFEFF" + ["الاسم","الحالة","وقت التسجيل","نوع اللقاء","سبب الاعتذار"].join(",") + "\n";
+    [...PARTICIPANTS].sort((a,b)=>a.localeCompare(b,'ar')).forEach(n=>{
+      const rec = getAttendanceRecord(mt.id, n);
+      const st = effectiveStatus(mt.id, n);
+      csv += [n, st, rec?fmtDateTime(rec.timestamp):"-", mt.type==='onsite'?'حضوري':'افتراضي', rec&&rec.reason?rec.reason.replace(/,/g," "):"-"].join(",") + "\n";
+    });
+    downloadFile(csv, `سجل_الحضور_${mt.date}.csv`, "text/csv;charset=utf-8;");
+  };
+  const printBtn = document.getElementById("btnPrint");
+  if(printBtn) printBtn.onclick = ()=> window.print();
+}
+
+function bindStatsTab(){
+  const s = document.getElementById("statsSearch");
+  s.oninput = ()=>{ state.filters.search = s.value; render(); };
+  const exportBtn = document.getElementById("btnExportStatsCsv");
+  exportBtn.onclick = ()=>{
+    const closedMeetings = state.meetings.filter(isMeetingClosedFinal);
+    let csv = "\uFEFF" + ["الاسم","حضور","اعتذار","غياب","نسبة الحضور"].join(",") + "\n";
+    [...PARTICIPANTS].sort((a,b)=>a.localeCompare(b,'ar')).forEach(n=>{
+      let present=0, excused=0, absent=0;
+      closedMeetings.forEach(mt=>{
+        const st = effectiveStatus(mt.id,n);
+        if(st==="حاضر") present++; else if(st==="معتذر") excused++; else if(st==="غائب") absent++;
+      });
+      const pct = closedMeetings.length ? Math.round((present/closedMeetings.length)*100) : 0;
+      csv += [n, present, excused, absent, pct+"%"].join(",") + "\n";
+    });
+    downloadFile(csv, "إحصاءات_الحضور.csv", "text/csv;charset=utf-8;");
+  };
+  document.getElementById("btnPrintStats").onclick = ()=> window.print();
+}
+
+function bindSettingsTab(){
+  document.getElementById("btnCopyLink").onclick = ()=>{
+    const link = location.href.split('#')[0];
+    navigator.clipboard.writeText(link).then(()=>{
+      document.getElementById("btnCopyLink").textContent = "تم النسخ ✓";
+      setTimeout(()=>{ document.getElementById("btnCopyLink").textContent="نسخ الرابط"; },1500);
+    });
+  };
+  document.getElementById("btnChangePw").onclick = async ()=>{
+    const val = document.getElementById("newPw").value.trim();
+    if(!val || val.length<4){ document.getElementById("pwSaveMsg").textContent="كلمة المرور قصيرة جدًا"; return; }
+    await savePassword(val);
+    document.getElementById("pwSaveMsg").textContent = "تم حفظ كلمة المرور الجديدة بنجاح ✓";
+  };
+}
+
+function downloadFile(content, filename, mime){
+  const blob = new Blob([content], {type:mime});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+init();
+</script>
+</body>
+</html>
