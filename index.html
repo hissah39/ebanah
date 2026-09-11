@@ -750,18 +750,36 @@ async function adminSetStatus(meetingId, name, status){
 
 function renderAdminStats(){
   const totalMeetings = state.meetings.length;
+  const closedMeetings = state.meetings.filter(isMeetingClosedFinal);
   const totalParticipants = PARTICIPANTS.length;
-  let totalPresent=0, totalRecords=0;
+  let totalPresent=0, totalExcused=0, totalAbsent=0;
   state.meetings.forEach(mt=>{
     const records = state.attendanceByMeeting[mt.id]||{};
-    Object.values(records).forEach(r=>{ totalRecords++; if(r.status==='present') totalPresent++; });
+    let mtPresent=0, mtExcused=0;
+    PARTICIPANTS.forEach(n=>{
+      const r = records[n];
+      if(r && r.status==='present') mtPresent++;
+      else if(r && r.status==='excused') mtExcused++;
+    });
+    totalPresent += mtPresent;
+    totalExcused += mtExcused;
+    if(isMeetingClosedFinal(mt)){
+      totalAbsent += (PARTICIPANTS.length - mtPresent - mtExcused);
+    }
   });
-  const rate = totalRecords ? Math.round((totalPresent/totalRecords)*100) : 0;
+  const totalCounted = totalPresent + totalExcused + totalAbsent;
+  const rate = totalCounted ? Math.round((totalPresent/totalCounted)*100) : 0;
   return `<div class="stat-grid">
-    <div class="stat-box"><div class="num">${toArabicNumerals(totalMeetings)}</div><div class="lbl">إجمالي اللقاءات</div></div>
-    <div class="stat-box"><div class="num">${toArabicNumerals(totalParticipants)}</div><div class="lbl">عدد المشاركات</div></div>
+    <div class="stat-box"><div class="num">${toArabicNumerals(totalExcused)}</div><div class="lbl">معتذرات</div></div>
+    <div class="stat-box"><div class="num">${toArabicNumerals(totalPresent)}</div><div class="lbl">حاضرات</div></div>
+    <div class="stat-box"><div class="num">${toArabicNumerals(totalParticipants)}</div><div class="lbl">إجمالي المشاركات</div></div>
+  </div>
+  <div class="stat-grid">
+    <div class="stat-box"><div class="num">${toArabicNumerals(closedMeetings.length)}</div><div class="lbl">لقاءات منعقدة</div></div>
     <div class="stat-box"><div class="num">${rate}%</div><div class="lbl">نسبة الحضور</div></div>
-  </div>`;
+    <div class="stat-box"><div class="num">${toArabicNumerals(totalAbsent)}</div><div class="lbl">غائبات</div></div>
+  </div>
+  <div class="card center muted">إجمالي اللقاءات المنشأة: ${toArabicNumerals(totalMeetings)}</div>`;
 }
 
 function renderAdminSettings(){
