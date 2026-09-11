@@ -359,7 +359,7 @@ async function loadAll(){
 
 async function createMeetingDB(mt){
   const { error } = await sb.from('meetings').insert({
-    title: mt.title, type: mt.type, date: mt.date, time: mt.time, location: mt.location, weekday: mt.weekday,
+    title: mt.title, type: mt.type, date: mt.date, time: mt.time, location: mt.location,
     status: 'open', opened_at: new Date().toISOString()
   });
   if(error){ state.lastError = error.message; return false; }
@@ -401,6 +401,17 @@ function fmtDate(dateStr, weekday){
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+/* Encode weekday + time together into the existing 'time' text column, so no DB schema change is needed.
+   Format stored: "الاثنين||08:00"  (backward compatible: old rows without "||" just have plain time) */
+function packTimeWeekday(weekday, time){
+  return (weekday||'') + '||' + (time||'');
+}
+function unpackTimeWeekday(raw){
+  if(!raw) return { weekday:null, time:'' };
+  if(raw.indexOf('||') === -1) return { weekday:null, time:raw };
+  const parts = raw.split('||');
+  return { weekday: parts[0]||null, time: parts.slice(1).join('||') };
+}
 function isMeetingOpen(mt){ return mt && mt.status === 'open'; }
 function getCurrentOpenMeeting(){
   const open = state.meetings.filter(isMeetingOpen);
@@ -422,12 +433,13 @@ function renderPublic(){
   } else {
     const badgeClass = mt.type === 'virtual' ? 'badge-virtual' : 'badge-onsite';
     const badgeLabel = mt.type === 'virtual' ? 'لقاء عن بُعد' : 'لقاء حضوري';
+    const tw = unpackTimeWeekday(mt.time);
     html += `<div class="card">
       <span class="meeting-badge ${badgeClass}">${badgeLabel}</span>
       <div class="meeting-title">${escapeHtml(mt.title)}</div>
       <div class="meeting-meta">
-        <div>📅 <b>${fmtDate(mt.date, mt.weekday)}</b></div>
-        <div>🕐 الساعة: <b>${escapeHtml(mt.time||'-')}</b></div>
+        <div>📅 <b>${fmtDate(mt.date, tw.weekday)}</b></div>
+        <div>🕐 الساعة: <b>${escapeHtml(tw.time||'-')}</b></div>
         <div>📍 ${mt.type==='virtual'?'الرابط':'المكان'}: <b>${escapeHtml(mt.location||'-')}</b></div>
       </div>
     </div>`;
@@ -552,7 +564,7 @@ function renderAdminMeetings(){
       <div class="flex-between">
         <div>
           <b>${escapeHtml(mt.title)}</b>
-          <div class="muted" style="font-size:12.5px;margin-top:2px;">${badgeLabel} • ${fmtDate(mt.date, mt.weekday)}</div>
+          <div class="muted" style="font-size:12.5px;margin-top:2px;">${badgeLabel} • ${fmtDate(mt.date, unpackTimeWeekday(mt.time).weekday)}</div>
         </div>
         <span class="status-pill ${open?'pill-present':'pill-pending'}">${open?'مفتوح':'مغلق'}</span>
       </div>
@@ -597,6 +609,7 @@ function closeModal(){ document.getElementById('modalRoot').innerHTML=''; }
 function openEditMeetingModal(id){
   const mt = state.meetings.find(m=>m.id===id);
   if(!mt) return;
+  const tw = unpackTimeWeekday(mt.time);
   const modal = document.getElementById('modalRoot');
   modal.innerHTML = `<div class="modal-overlay" onclick="if(event.target===this)closeModal()">
     <div class="modal-card">
@@ -609,9 +622,9 @@ function openEditMeetingModal(id){
         <option value="virtual" ${mt.type==='virtual'?'selected':''}>عن بُعد</option>
       </select>
       <label>التاريخ (هجري)</label>
-      ${hijriDateSelectorHtml('emDate', mt.date, mt.weekday)}
+      ${hijriDateSelectorHtml('emDate', mt.date, tw.weekday || WEEKDAYS_AR[new Date(mt.date+"T00:00:00").getDay()])}
       <label>الوقت</label>
-      <input type="text" id="emTime" value="${escapeHtml(mt.time||'')}">
+      <input type="text" id="emTime" value="${escapeHtml(tw.time||'')}">
       <label id="emLocLabel">${mt.type==='virtual'?'رابط اللقاء (Zoom)':'المكان'}</label>
       <input type="text" id="emLoc" value="${escapeHtml(mt.location||'')}">
       <div class="field-error" id="emError"></div>
@@ -622,12 +635,13 @@ function openEditMeetingModal(id){
 async function saveEditedMeeting(id){
   const title = document.getElementById('emTitle').value.trim();
   const type = document.getElementById('emType').value;
-  const time = document.getElementById('emTime').value.trim();
+  const timeRaw = document.getElementById('emTime').value.trim();
   const loc = document.getElementById('emLoc').value.trim();
   if(!title){ document.getElementById('emError').textContent='الرجاء إدخال عنوان اللقاء'; return; }
   const date = readHijriSelector('emDate');
   const weekday = readWeekdaySelector('emDate');
-  const { error } = await sb.from('meetings').update({title, type, date, time, location: loc, weekday}).eq('id', id);
+  const time = packTimeWeekday(weekday, timeRaw);
+  const { error } = await sb.from('meetings').update({title, type, date, time, location: loc}).eq('id', id);
   const err = document.getElementById('emError');
   if(!error){
     await loadAll();
@@ -641,12 +655,13 @@ async function saveEditedMeeting(id){
 async function createMeeting(){
   const title = document.getElementById('mTitle').value.trim();
   const type = document.getElementById('mType').value;
-  const time = document.getElementById('mTime').value.trim();
+  const timeRaw = document.getElementById('mTime').value.trim();
   const loc = document.getElementById('mLoc').value.trim();
   if(!title){ document.getElementById('mError').textContent='الرجاء إدخال عنوان اللقاء'; return; }
   const date = readHijriSelector('mDate');
   const weekday = readWeekdaySelector('mDate');
-  const ok = await createMeetingDB({title, type, date, time, location: loc, weekday});
+  const time = packTimeWeekday(weekday, timeRaw);
+  const ok = await createMeetingDB({title, type, date, time, location: loc});
   const err = document.getElementById('mError');
   if(ok){
     await loadAll();
