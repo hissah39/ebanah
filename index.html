@@ -271,7 +271,7 @@ function isoFromHijri(hYear, hMonth, hDay){
   const y = g.getFullYear(), m = String(g.getMonth()+1).padStart(2,"0"), d = String(g.getDate()).padStart(2,"0");
   return `${y}-${m}-${d}`;
 }
-function hijriDateSelectorHtml(idPrefix, isoDate){
+function hijriDateSelectorHtml(idPrefix, isoDate, weekday){
   const base = isoDate ? new Date(isoDate+"T00:00:00") : new Date();
   const dH = gregorianToHijri(base);
   const days = Array.from({length:30}, (_,i)=>i+1);
@@ -282,32 +282,30 @@ function hijriDateSelectorHtml(idPrefix, isoDate){
     <div class="row">
       <div>
         <label>اليوم</label>
-        <select id="${idPrefix}Day" onchange="updateWeekdayDisplay('${idPrefix}')">
+        <select id="${idPrefix}Day">
           ${days.map(d=>`<option value="${d}" ${d===dH.day?'selected':''}>${toArabicNumerals(d)}</option>`).join("")}
         </select>
       </div>
       <div>
         <label>الشهر</label>
-        <select id="${idPrefix}Month" onchange="updateWeekdayDisplay('${idPrefix}')">
+        <select id="${idPrefix}Month">
           ${HIJRI_MONTHS.map((m,i)=>`<option value="${i+1}" ${(i+1)===dH.month?'selected':''}>${m}</option>`).join("")}
         </select>
       </div>
       <div>
         <label>السنة</label>
-        <select id="${idPrefix}Year" onchange="updateWeekdayDisplay('${idPrefix}')">
+        <select id="${idPrefix}Year">
           ${years.map(y=>`<option value="${y}" ${y===dH.year?'selected':''}>${toArabicNumerals(y)} هـ</option>`).join("")}
         </select>
       </div>
     </div>
-    <div class="muted" id="${idPrefix}Weekday" style="margin-top:8px;text-align:center;font-weight:700;color:var(--primary-dark);">
-      ${WEEKDAYS_AR[hijriToGregorian(dH.year, dH.month, dH.day).getDay()]}
-    </div>`;
+    <label>يوم الأسبوع</label>
+    <select id="${idPrefix}Weekday">
+      ${WEEKDAYS_AR.map(w=>`<option value="${w}" ${w===weekday?'selected':''}>${w}</option>`).join("")}
+    </select>`;
 }
-function updateWeekdayDisplay(idPrefix){
-  const iso = readHijriSelector(idPrefix);
-  const d = new Date(iso+"T00:00:00");
-  const el = document.getElementById(idPrefix+"Weekday");
-  if(el) el.textContent = WEEKDAYS_AR[d.getDay()];
+function readWeekdaySelector(idPrefix){
+  return document.getElementById(idPrefix+"Weekday").value;
 }
 function readHijriSelector(idPrefix){
   const day = parseInt(document.getElementById(idPrefix+"Day").value, 10);
@@ -361,7 +359,7 @@ async function loadAll(){
 
 async function createMeetingDB(mt){
   const { error } = await sb.from('meetings').insert({
-    title: mt.title, type: mt.type, date: mt.date, time: mt.time, location: mt.location,
+    title: mt.title, type: mt.type, date: mt.date, time: mt.time, location: mt.location, weekday: mt.weekday,
     status: 'open', opened_at: new Date().toISOString()
   });
   if(error){ state.lastError = error.message; return false; }
@@ -393,11 +391,12 @@ async function savePasswordDB(pw){
 }
 
 /* ================= UTIL ================= */
-function fmtDate(dateStr){
+function fmtDate(dateStr, weekday){
   if(!dateStr) return "-";
   const d = new Date(dateStr+"T00:00:00");
   const h = gregorianToHijri(d);
-  return `${WEEKDAYS_AR[d.getDay()]}، ${toArabicNumerals(h.day)} ${HIJRI_MONTHS[h.month-1]} ${toArabicNumerals(h.year)} هـ`;
+  const wd = weekday || WEEKDAYS_AR[d.getDay()];
+  return `${wd}، ${toArabicNumerals(h.day)} ${HIJRI_MONTHS[h.month-1]} ${toArabicNumerals(h.year)} هـ`;
 }
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -427,7 +426,7 @@ function renderPublic(){
       <span class="meeting-badge ${badgeClass}">${badgeLabel}</span>
       <div class="meeting-title">${escapeHtml(mt.title)}</div>
       <div class="meeting-meta">
-        <div>📅 <b>${fmtDate(mt.date)}</b></div>
+        <div>📅 <b>${fmtDate(mt.date, mt.weekday)}</b></div>
         <div>🕐 الساعة: <b>${escapeHtml(mt.time||'-')}</b></div>
         <div>📍 ${mt.type==='virtual'?'الرابط':'المكان'}: <b>${escapeHtml(mt.location||'-')}</b></div>
       </div>
@@ -553,7 +552,7 @@ function renderAdminMeetings(){
       <div class="flex-between">
         <div>
           <b>${escapeHtml(mt.title)}</b>
-          <div class="muted" style="font-size:12.5px;margin-top:2px;">${badgeLabel} • ${fmtDate(mt.date)}</div>
+          <div class="muted" style="font-size:12.5px;margin-top:2px;">${badgeLabel} • ${fmtDate(mt.date, mt.weekday)}</div>
         </div>
         <span class="status-pill ${open?'pill-present':'pill-pending'}">${open?'مفتوح':'مغلق'}</span>
       </div>
@@ -583,7 +582,7 @@ function openMeetingModal(){
         <option value="virtual">عن بُعد</option>
       </select>
       <label>التاريخ (هجري)</label>
-      ${hijriDateSelectorHtml('mDate','')}
+      ${hijriDateSelectorHtml('mDate','', WEEKDAYS_AR[new Date().getDay()])}
       <label>الوقت</label>
       <input type="text" id="mTime" placeholder="مثال: 08:00">
       <label id="mLocLabel">المكان</label>
@@ -610,7 +609,7 @@ function openEditMeetingModal(id){
         <option value="virtual" ${mt.type==='virtual'?'selected':''}>عن بُعد</option>
       </select>
       <label>التاريخ (هجري)</label>
-      ${hijriDateSelectorHtml('emDate', mt.date)}
+      ${hijriDateSelectorHtml('emDate', mt.date, mt.weekday)}
       <label>الوقت</label>
       <input type="text" id="emTime" value="${escapeHtml(mt.time||'')}">
       <label id="emLocLabel">${mt.type==='virtual'?'رابط اللقاء (Zoom)':'المكان'}</label>
@@ -627,7 +626,8 @@ async function saveEditedMeeting(id){
   const loc = document.getElementById('emLoc').value.trim();
   if(!title){ document.getElementById('emError').textContent='الرجاء إدخال عنوان اللقاء'; return; }
   const date = readHijriSelector('emDate');
-  const { error } = await sb.from('meetings').update({title, type, date, time, location: loc}).eq('id', id);
+  const weekday = readWeekdaySelector('emDate');
+  const { error } = await sb.from('meetings').update({title, type, date, time, location: loc, weekday}).eq('id', id);
   const err = document.getElementById('emError');
   if(!error){
     await loadAll();
@@ -645,7 +645,8 @@ async function createMeeting(){
   const loc = document.getElementById('mLoc').value.trim();
   if(!title){ document.getElementById('mError').textContent='الرجاء إدخال عنوان اللقاء'; return; }
   const date = readHijriSelector('mDate');
-  const ok = await createMeetingDB({title, type, date, time, location: loc});
+  const weekday = readWeekdaySelector('mDate');
+  const ok = await createMeetingDB({title, type, date, time, location: loc, weekday});
   const err = document.getElementById('mError');
   if(ok){
     await loadAll();
