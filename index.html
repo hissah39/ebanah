@@ -216,14 +216,13 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
 
 /* ================= DATA ================= */
 const PARTICIPANTS = [
-"أديم الجهني","أروى أبا الخيل","أروى الجنيدل","آسية الحمدان","آسية الجنيدل","أسماء الزاحم","أفنان المهيدب",
-"أمينة الشمري","أمينة المطرودي","أنفال العنزان","البندري العريفي","بتول الرومي","جواهر القحطاني",
-"حفصة آدم","حنان الشثري","ديمة الكثيري","ربى السكيت","رند الزامل","رند الزايد","ريم الغميز",
-"سارة إسماعيل","سارة تركستاني","سارة الشهيل","سارة المديفر","سعاد القاسم","سلمى الربيش","شهد المرشود",
-"غادة الدواس","فاطمة السلطان","فرح البداح","في الدرويش","كنده الجربوع","لجين القشعمي","لمى الصبحي",
-"لمياء المطرودي","مريم الذويخ","مها المهوس","منال الكاف","منيرة السليمان","منيرة الصقري","نجد الموسى",
-"نورة الدهام","نورة الزامل","نورة العجلان","هدى الدامغ","هدى الكثيري","هناء النفجان",
-"هند المشرف","أروى السياري","فاطمة الجابر","بشائر البداح"
+"أديم الجهني","أروى أبا الخيل","أروى الجنيدل","أروى السياري","أسماء الزاحم","آسية الجنيدل","آسية الحمدان",
+"أفنان المهيدب","البندري العريفي","أمينة الشمري","أمينة المطرودي","أنفال العنزان","بتول الرومي","بشائر البداح",
+"جواهر القحطاني","حفصة آدم","حنان الشثري","ديمة الكثيري","ربى السكيت","رند الزامل","رند الزايد","ريم الغميز",
+"سارة إسماعيل","سارة الشهيل","سارة المديفر","سارة تركستاني","سعاد القاسم","سلمى الربيش","شعاع المشرف","شهد المرشود",
+"غادة الدواس","فاطمة الجابر","فاطمة السلطان","فرح البداح","في الدرويش","كنده الجربوع","لانا الطحان","لجين القشعمي",
+"لمى الصبحي","لمياء المطرودي","مريم الذويخ","منال الكاف","منيرة السليمان","منيرة الصقري","مها المهوس",
+"نجد الموسى","نورة الدهام","نورة الزامل","نورة العجلان","هدى الدامغ","هدى الكثيري","هناء النفجان","هند المشرف"
 ];
 
 const DEFAULT_PASSWORD = "2000";
@@ -444,7 +443,7 @@ function renderStatusArea(mt){
   const rec = getAttendanceRecord(mt.id, state.selectedName);
 
   if(rec && !state.editingAttendance){
-    const label = rec.status==='present'?'حاضرة':rec.status==='excused'?'معتذرة':'غائبة';
+    const label = rec.status==='present'?'حاضرة':rec.status==='excused'?'اعتذر':'غائبة';
     const pillClass = rec.status==='present'?'pill-present':rec.status==='excused'?'pill-excused':'pill-absent';
     return `
       <div class="msg-already">
@@ -458,9 +457,8 @@ function renderStatusArea(mt){
     <label>سجّلي حالتك لهذا اللقاء</label>
     <div class="row" style="margin-top:8px;">
       <button class="btn btn-primary" onclick="submitAttendance('present')">حاضرة</button>
-      <button class="btn btn-outline" onclick="submitAttendance('absent')">غائبة</button>
+      <button class="btn btn-secondary" onclick="submitAttendance('excused')">اعتذر</button>
     </div>
-    <button class="btn btn-secondary" onclick="submitAttendance('excused')">معتذرة</button>
     ${rec ? `<button class="btn" style="background:none;color:var(--muted);text-decoration:underline;" onclick="cancelEdit()">إلغاء</button>` : ''}
   `;
 }
@@ -554,6 +552,7 @@ function renderAdminMeetings(){
         <button class="btn btn-sm ${open?'btn-outline':'btn-secondary'}" onclick="toggleMeeting('${mt.id}')">${open?'إغلاق التسجيل':'فتح التسجيل'}</button>
         <button class="btn btn-sm btn-secondary" onclick="viewLog('${mt.id}')">${state.selectedMeetingLog===mt.id?'إخفاء السجل':'السجل'} (${toArabicNumerals(attCount)})</button>
       </div>
+      <button class="btn btn-sm btn-secondary" style="margin-top:8px;width:100%;" onclick="openEditMeetingModal('${mt.id}')">تعديل بيانات اللقاء</button>
     </div>`;
     if(state.selectedMeetingLog===mt.id){
       html += renderMeetingLog(mt.id);
@@ -586,6 +585,49 @@ function openMeetingModal(){
   </div>`;
 }
 function closeModal(){ document.getElementById('modalRoot').innerHTML=''; }
+
+function openEditMeetingModal(id){
+  const mt = state.meetings.find(m=>m.id===id);
+  if(!mt) return;
+  const modal = document.getElementById('modalRoot');
+  modal.innerHTML = `<div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+    <div class="modal-card">
+      <div class="flex-between"><h3>تعديل بيانات اللقاء</h3><button class="close-x" onclick="closeModal()">×</button></div>
+      <label>عنوان اللقاء</label>
+      <input type="text" id="emTitle" value="${escapeHtml(mt.title)}">
+      <label>نوع اللقاء</label>
+      <select id="emType" onchange="document.getElementById('emLocLabel').textContent = this.value==='virtual' ? 'رابط اللقاء (Zoom)' : 'المكان';">
+        <option value="onsite" ${mt.type==='onsite'?'selected':''}>حضوري</option>
+        <option value="virtual" ${mt.type==='virtual'?'selected':''}>عن بُعد</option>
+      </select>
+      <label>التاريخ (هجري)</label>
+      ${hijriDateSelectorHtml('emDate', mt.date)}
+      <label>الوقت</label>
+      <input type="text" id="emTime" value="${escapeHtml(mt.time||'')}">
+      <label id="emLocLabel">${mt.type==='virtual'?'رابط اللقاء (Zoom)':'المكان'}</label>
+      <input type="text" id="emLoc" value="${escapeHtml(mt.location||'')}">
+      <div class="field-error" id="emError"></div>
+      <button class="btn btn-primary" onclick="saveEditedMeeting('${id}')">حفظ التعديلات</button>
+    </div>
+  </div>`;
+}
+async function saveEditedMeeting(id){
+  const title = document.getElementById('emTitle').value.trim();
+  const type = document.getElementById('emType').value;
+  const time = document.getElementById('emTime').value.trim();
+  const loc = document.getElementById('emLoc').value.trim();
+  if(!title){ document.getElementById('emError').textContent='الرجاء إدخال عنوان اللقاء'; return; }
+  const date = readHijriSelector('emDate');
+  const { error } = await sb.from('meetings').update({title, type, date, time, location: loc}).eq('id', id);
+  const err = document.getElementById('emError');
+  if(!error){
+    await loadAll();
+    closeModal();
+    render();
+  } else if(err){
+    err.innerHTML = '⚠️ تعذّر الحفظ. الخطأ: <span style="direction:ltr;display:inline-block;">' + escapeHtml(error.message||'') + '</span>';
+  }
+}
 
 async function createMeeting(){
   const title = document.getElementById('mTitle').value.trim();
@@ -621,20 +663,26 @@ function renderMeetingLog(id){
   const mt = state.meetings.find(m=>m.id===id);
   if(!mt) return '';
   const records = state.attendanceByMeeting[id] || {};
+  const closed = isMeetingClosedFinal(mt);
   const present = PARTICIPANTS.filter(n=>records[n]?.status==='present').length;
   const excused = PARTICIPANTS.filter(n=>records[n]?.status==='excused').length;
-  const absent = PARTICIPANTS.filter(n=>records[n]?.status==='absent').length;
+  const absent = PARTICIPANTS.filter(n=>{
+    const rec = records[n];
+    if(rec) return rec.status==='absent';
+    return closed;
+  }).length;
   let html = `<div class="card">
     <div class="stat-grid" style="margin-top:0;">
       <div class="stat-box"><div class="num">${toArabicNumerals(present)}</div><div class="lbl">حاضرات</div></div>
-      <div class="stat-box"><div class="num">${toArabicNumerals(excused)}</div><div class="lbl">معتذرات</div></div>
+      <div class="stat-box"><div class="num">${toArabicNumerals(excused)}</div><div class="lbl">اعتذرن</div></div>
       <div class="stat-box"><div class="num">${toArabicNumerals(absent)}</div><div class="lbl">غائبات</div></div>
     </div>
     <div class="table-wrap"><table><thead><tr><th>الاسم</th><th>الحالة</th><th></th></tr></thead><tbody>`;
   PARTICIPANTS.forEach(n=>{
     const rec = records[n];
-    const status = rec?.status || 'pending';
-    const label = status==='present'?'حاضرة':status==='excused'?'معتذرة':status==='absent'?'غائبة':'لم تسجّل';
+    let status = rec?.status;
+    if(!status){ status = closed ? 'absent' : 'pending'; }
+    const label = status==='present'?'حاضرة':status==='excused'?'اعتذر':status==='absent'?'غائبة':'لم تسجّل';
     const cls = status==='present'?'pill-present':status==='excused'?'pill-excused':status==='absent'?'pill-absent':'pill-pending';
     html += `<tr>
       <td>${escapeHtml(n)}</td>
@@ -657,7 +705,7 @@ function openEditRecordModal(meetingId, name){
         <button class="btn btn-primary" onclick="adminSetStatus('${meetingId}','${escapeHtml(name).replace(/'/g,"\\'")}','present')">حاضرة</button>
         <button class="btn btn-outline" onclick="adminSetStatus('${meetingId}','${escapeHtml(name).replace(/'/g,"\\'")}','absent')">غائبة</button>
       </div>
-      <button class="btn btn-secondary" onclick="adminSetStatus('${meetingId}','${escapeHtml(name).replace(/'/g,"\\'")}','excused')">معتذرة</button>
+      <button class="btn btn-secondary" onclick="adminSetStatus('${meetingId}','${escapeHtml(name).replace(/'/g,"\\'")}','excused')">اعتذر</button>
       <div class="field-error" id="editError"></div>
     </div>
   </div>`;
