@@ -413,6 +413,7 @@ function unpackTimeWeekday(raw){
   return { weekday: parts[0]||null, time: parts.slice(1).join('||') };
 }
 function isMeetingOpen(mt){ return mt && mt.status === 'open'; }
+function isMeetingClosedFinal(mt){ return mt && mt.status === 'closed'; }
 function getCurrentOpenMeeting(){
   const open = state.meetings.filter(isMeetingOpen);
   if(open.length===0) return null;
