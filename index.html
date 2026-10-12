@@ -783,7 +783,25 @@ function renderAdminStats(){
     <div class="stat-box"><div class="num">${rate}%</div><div class="lbl">نسبة الحضور</div></div>
     <div class="stat-box"><div class="num">${toArabicNumerals(totalAbsent)}</div><div class="lbl">غائبات</div></div>
   </div>
-  <div class="card center muted">إجمالي اللقاءات المنشأة: ${toArabicNumerals(totalMeetings)}</div>`;
+  <div class="card center muted">إجمالي اللقاءات المنشأة: ${toArabicNumerals(totalMeetings)}</div>
+  ${renderFrequentAbsent(closedMeetings)}`;
+}
+
+function renderFrequentAbsent(closedMeetings){
+  const list = [];
+  PARTICIPANTS.forEach(n=>{
+    let cnt=0;
+    closedMeetings.forEach(mt=>{
+      const r = (state.attendanceByMeeting[mt.id]||{})[n];
+      if(!r || r.status!=='present') cnt++;
+    });
+    if(cnt>=3) list.push({n,cnt});
+  });
+  list.sort((a,b)=>b.cnt-a.cnt || a.n.localeCompare(b.n,'ar'));
+  const rows = list.length
+    ? list.map(x=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line,#e5e5e5);"><span>${escapeHtml(x.n)}</span><b>${toArabicNumerals(x.cnt)} لقاءات</b></div>`).join('')
+    : '<div class="muted center">لا توجد مشاركة غابت ٣ لقاءات فأكثر</div>';
+  return `<div class="card"><label>الغائبات والمعتذرات ٣ لقاءات فأكثر (${toArabicNumerals(list.length)})</label>${rows}</div>`;
 }
 
 function renderAdminSettings(){
