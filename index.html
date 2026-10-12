@@ -801,6 +801,7 @@ function renderFrequentAbsent(closedMeetings){
     let cnt=0;
     const start = JOINED_AT_MEETING[n] || 1;
     closedMeetings.forEach(mt=>{
+      if(mt.type!=='virtual') return;
       if((numOf[mt.id]||1) < start) return;
       const r = (state.attendanceByMeeting[mt.id]||{})[n];
       if(!r || r.status!=='present') cnt++;
@@ -811,7 +812,7 @@ function renderFrequentAbsent(closedMeetings){
   const rows = list.length
     ? list.map(x=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line,#e5e5e5);"><span>${escapeHtml(x.n)}</span><b>${toArabicNumerals(x.cnt)} لقاءات</b></div>`).join('')
     : '<div class="muted center">لا توجد مشاركة غابت ٣ لقاءات فأكثر</div>';
-  return `<div class="card"><label>الغائبات والمعتذرات ٣ لقاءات فأكثر (${toArabicNumerals(list.length)})</label>${rows}</div>`;
+  return `<div class="card"><label>الغائبات والمعتذرات ٣ لقاءات (عن بُعد) فأكثر (${toArabicNumerals(list.length)})</label>${rows}</div>`;
 }
 
 function renderAdminSettings(){
