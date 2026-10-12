@@ -787,11 +787,21 @@ function renderAdminStats(){
   ${renderFrequentAbsent(closedMeetings)}`;
 }
 
+/* رقم اللقاء الذي يبدأ منه احتساب الغياب للمشتركات المضافات متأخرًا (الباقي من اللقاء الأول) */
+const JOINED_AT_MEETING = {
+  "البتول المقرن":4,"ندى العصيمي":4,"أفنان النافع":4,"خضراء البلوي":4,"نورة ال رشيد":4,
+  "نجود الدواس":4,"الجوهرة الرومي":4,
+  "مرام المقحم":4,"لبنى الراشد":4,"نسيبة الراشد":4,"لينة الراشد":4,"الشيماء الراشد":4,"شهد الراشد":4
+};
 function renderFrequentAbsent(closedMeetings){
   const list = [];
+  const ordered = state.meetings.slice().sort((a,b)=> String(a.date).localeCompare(String(b.date)) || new Date(a.created_at)-new Date(b.created_at));
+  const numOf = {}; ordered.forEach((m,i)=>{ numOf[m.id]=i+1; });
   PARTICIPANTS.forEach(n=>{
     let cnt=0;
+    const start = JOINED_AT_MEETING[n] || 1;
     closedMeetings.forEach(mt=>{
+      if((numOf[mt.id]||1) < start) return;
       const r = (state.attendanceByMeeting[mt.id]||{})[n];
       if(!r || r.status!=='present') cnt++;
     });
