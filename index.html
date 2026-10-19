@@ -792,13 +792,17 @@ function renderAdminStats(){
 const JOINED_AT_MEETING = {
   "البتول المقرن":4,"ندى العصيمي":4,"أفنان النافع":4,"خضراء البلوي":4,"نورة ال رشيد":4,
   "نجود الدواس":4,"الجوهرة الرومي":4,
+  "هدى الفارس":5,"بثينة الكثيري":5,
   "مرام المقحم":4,"لبنى الراشد":4,"نسيبة الراشد":4,"لينة الراشد":4,"الشيماء الراشد":4,"شهد الراشد":4
 };
+/* أسماء تُستثنى من قائمة الغائبات */
+const EXCLUDED_FROM_ABSENT_LIST = ["مها المهوس"];
 function renderFrequentAbsent(closedMeetings){
   const list = [];
   const ordered = state.meetings.slice().sort((a,b)=> String(a.date).localeCompare(String(b.date)) || new Date(a.created_at)-new Date(b.created_at));
   const numOf = {}; ordered.forEach((m,i)=>{ numOf[m.id]=i+1; });
   PARTICIPANTS.forEach(n=>{
+    if(EXCLUDED_FROM_ABSENT_LIST.includes(n)) return;
     let cnt=0;
     const start = JOINED_AT_MEETING[n] || 1;
     closedMeetings.forEach(mt=>{
